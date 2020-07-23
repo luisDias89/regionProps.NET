@@ -1,2 +1,2 @@
 # regionProps.NET
-IMplementation of descriptor for object in artiicial vision
+IMplementation of descriptor for object in artificial vision
