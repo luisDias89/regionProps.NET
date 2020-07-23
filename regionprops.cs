@@ -17,14 +17,16 @@ using Emgu.Util.TypeEnum;
 using Emgu.CV.Structure;
 using System.Net;
 
-// Construção da função regionprops         //
-//                                          //
-//      Autores: Luís Dias  
-//                                          //
-//________ 21/07/2020 _______________       //
+// Construção da função regionprops   //
+//                                    //
+//      Autores: Luís Dias            // 
+//                                    //
+//________ 21/07/2020 _______________ //
+
 
 namespace RegionProps
 {
+
     class regionprops
     {
         public class Extreme_class
@@ -50,9 +52,13 @@ namespace RegionProps
         public CircleF CirculoEnvolvente = new CircleF();                 // Carregado
         public double perimetro;                                          // Carregado
         public double Circularity;                                        // Carregado
+        public bool isConvex;                                             // Carregado
+        public VectorOfPoint ContourApproximation = new VectorOfPoint();  // Carregado
+        public VectorOfPoint Contorno = new VectorOfPoint();              // Carregado
+        public Point[] BoundingBoxRectRodado;                             // Carregado
+        public float AnguloRectExterior;                                  // Carregado
+        public RotatedRect EllipseValores;                                // Carregado  
 
-        double Orientation;
-        double MaskAndPixelPoints;
         int NumeroEuler;
        
         // Maximum Value, Minimum Value and their locations
@@ -113,8 +119,6 @@ namespace RegionProps
                             if (vetordeVetdePontos[i][iter].Y > buffer_MaxY.Y)
                                 buffer_MaxY = vetordeVetdePontos[i][iter];
                             //----------------- Fim do calculo do extreme -----------------
-
-                       
                     }
 
                     // ------------- Calculo do Centroid ---------------------
@@ -143,7 +147,6 @@ namespace RegionProps
 
                     // --------------- ConvectHULL_area ---------------------
                     ConvexHull_area = CvInvoke.ContourArea(ConvexHull);
-
                     //-------------------------------------------------------
 
                     //-----------------  Solidity ---------------------------
@@ -162,11 +165,46 @@ namespace RegionProps
                     perimetro = CvInvoke.ArcLength(vetordeVetdePontos[i], true);
                     // -----------------------------------------------------
 
-                    // -------------- Circularity --------------------------
+                    // -------------- Circularity (Fator de forma)----------
                     Circularity = (4 * Math.PI * Area) / (perimetro*perimetro);
                     //------------------------------------------------------
 
+                    // --------------- Verifica se é convexo ---------------
+                    isConvex = CvInvoke.IsContourConvex(vetordeVetdePontos[i]);
+                    //------------------------------------------------------
 
+                    // ------------- Apriximação do contorno ---------------
+                    CvInvoke.ApproxPolyDP(
+                        vetordeVetdePontos[i],              // Cada vetor de um contorno iterado
+                        ContourApproximation,                             // Vetor que vai conter a aproximação
+                        0.1 * perimetro,                    // Expande o perimetro
+                        true                                // Calcula um aproximação ao contorno externo                         
+                        );
+                    // -----------------------------------------------------
+
+                    // ------------- Devolve o contorno --------------------
+                    Contorno = vetordeVetdePontos[i];
+                    // ------------------------------------------------------
+
+                    // ------------  Retangulo rodado  ---------------------
+                    RotatedRect retanguloRodado = CvInvoke.MinAreaRect(vetordeVetdePontos[i]);
+                    PointF[] vetorPontos= CvInvoke.BoxPoints(retanguloRodado);
+                    BoundingBoxRectRodado = new Point[vetorPontos.Length];
+                    for(int iterador=0;iterador<vetorPontos.Length; iterador++)
+                        {
+                            BoundingBoxRectRodado[iterador].X = (int)vetorPontos[iterador].X;
+                            BoundingBoxRectRodado[iterador].Y = (int)vetorPontos[iterador].Y;
+                        }
+                    // ------------ AnguloRecExterior ----------------------
+                    AnguloRectExterior = retanguloRodado.Angle;
+                    // -----------------------------------------------------
+
+                    // ------------ EllipseImagem --------------------------
+                    EllipseValores= CvInvoke.FitEllipseAMS(vetordeVetdePontos[i]);
+                    // -----------------------------------------------------
+
+                    // Fitting a Line ---------------
+                    //---------------------------
 
                     // salta do ciclo for
                     i = vetordeVetdePontos.Size;
@@ -181,9 +219,12 @@ namespace RegionProps
             
 
         }
-    }
 
+        
+    }
 }
+
+
 
 
 
@@ -262,3 +303,9 @@ inIMG.Draw(nCicle, new Bgr(0, 255, 0), 10);
                                 input.Draw(storage[i].ToArray(), new Bgr(0, 0, 0), -1, LineType.AntiAlias);
                             }
  */
+
+
+/*  Exemplo de tupula
+ RotatedRect retanguloRodado = CvInvoke.MinAreaRect(vetordeVetdePontos);
+  var valoresRetanguloRodado = Tuple.Create<PointF, SizeF, PointF>(retanguloRodado.Center, retanguloRodado.Size, retanguloRodado.Center);
+*/
